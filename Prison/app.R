@@ -8,42 +8,77 @@
 #
 
 library(shiny)
+library(tidyverse)
+library(tidycensus)
+library(shinyWidgets)
+library(gtsummary)
+library(rstanarm)
+library(shinythemes)
+library(gt)
 
-# Define UI for application that draws a histogram
-ui <- fluidPage(
+library(readr)
 
-    # Application title
-    titlePanel("Old Faithful Geyser Data"),
+source("../make_plots.R")
+total_mortalitly <- msfp0116stt12 <- read_csv("raw_data/msfp0116stt12.csv")
+View(msfp0116stt12)
+crime_and_incarceration_by_state <- read_csv("raw_data/crime_and_incarceration_by_state.csv") 
 
-    # Sidebar with a slider input for number of bins 
-    sidebarLayout(
-        sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
-        ),
+ui <- navbarPage(
+    "Incarceration Numbers by State",
+    tabPanel("Model",
+             fluidPage(
+                 titlePanel("Model Title"),
+                 sidebarLayout(
+                     sidebarPanel(
+                         selectInput(
+                             "plot_type",
+                             "Plot Type",
+                             c(state_crime$name)
+                         )),
+                     mainPanel(plotOutput("state_crime"),
+                               plotOutput("vc_posterior"))) 
+             )),
+    tabPanel("Discussion",
+             titlePanel("Discussion Title"),
+             p("Tour of the modeling choices you made and 
+              an explanation of why you made them")),
+    tabPanel("About", 
+             titlePanel("About"),
+             h3("I have always been interested in criminal justice, 
+                and this project allows me to explore data revolving 
+                the topic and explore the most common trends between 
+                states."),
+             p("So far I have loaded all of my data sets into this project. 
+               I have not gotten to process my data yet, but my plan is 
+               to filter out by jurisdiction, year, violent crime total 
+               and by each type of crime. I want to show the trends 
+               over the years and how crime trends have differed. I also want
+               to load the covid prison rates and examine the differences 
+               between every state. "),
+      
+             h3("About Me"),
+             p("My name is Caroline Behrens and I study Economics. 
+             You can reach me at Cbehrens@college.harvard.edu."),
+             p(tags$a(href ="https://github.com/CarolineBehrens/gov1005-milestone-3.git"))))
+             
+                         
 
-        # Show a plot of the generated distribution
-        mainPanel(
-           plotOutput("distPlot")
-        )
-    )
-)
+#Define server logic required to draw a histogram
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
+server <- function(input, output){
+ output$state_crime <- renderPlot({ 
+ plot_1 <- state_crime %>%
+   filter(name == input$plot_type) %>%
+    ggplot(aes(x = year, y = total/1000, color = type)) +
+   geom_point(size = 5)
+  plot_1
+})
+} 
 
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
-    })
-}
+  
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
+
+

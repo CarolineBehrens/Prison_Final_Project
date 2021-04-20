@@ -7,14 +7,20 @@ library(rstanarm)
 
 
 library(readr)
-covid_prison_rates <- read_csv("milestone-3/raw_data/")
-crime_and_incarceration_by_state <- read_csv("crime_and_incarceration_by_state.csv") 
+total_mortalitly <- msfp0116stt12 <- read_csv("raw_data/msfp0116stt12.csv")
+View(msfp0116stt12)
+crime_and_incarceration_by_state <- read_csv("raw_data/crime_and_incarceration_by_state.csv") 
+
+
+total_mortality %>%
+  rename(State/Federal = jurisdiction)
+
+
 
 state_crime <- crime_and_incarceration_by_state %>%
   mutate(name = str_to_sentence(jurisdiction)) %>%
-  #inner_join(covid_prison_rates, by = "name") %>%
-  select(name, year, violent_crime_total,agg_assault, 
-         murder_manslaughter, robbery, property_crime_total,
+  inner_join(covid_prison_rates, by = "name") %>%
+   murder_manslaughter, robbery, property_crime_total,
          larceny, vehicle_theft, prisoner_cases_pct, prisoner_deaths_pct) %>%
   pivot_longer(names_to = "type",
                values_to = "total",

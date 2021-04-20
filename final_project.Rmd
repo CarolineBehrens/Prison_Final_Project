@@ -1,0 +1,55 @@
+---
+title: "final_project"
+author: "Caroline Behrens"
+date: "4/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+library(readr)
+x <- crime_and_incarceration_by_state <- read_csv("raw_data/crime_and_incarceration_by_state.csv")
+View(crime_and_incarceration_by_state)
+```
+
+
+```{r}
+total_mortality <- msfp0116stt12 <- read_csv("Prison/raw_data/msfp0116stt12.csv")
+View(msfp0116stt12)
+```
+
+
+```{r}
+x %>%
+  select(jurisdiction, year, violent_crime_total)
+```
+
+```{r}
+crime_and_incarceration_by_state %>%
+  sample_n(10)
+```
+
+```{r}
+state_crime <- crime_and_incarceration_by_state %>%
+  sample_n(1000, replace = TRUE) %>%
+  mutate(name = str_to_sentence(jurisdiction)) %>%
+inner_join(covid_prison_rates, by = "name") %>%
+  select(name, year, violent_crime_total,agg_assault, 
+murder_manslaughter, robbery, property_crime_total,
+larceny, vehicle_theft, prisoner_cases_pct, prisoner_deaths_pct) %>%
+  pivot_longer(names_to = "type",
+               values_to = "total",
+               cols = c(property_crime_total, violent_crime_total))
+```
+```{r}
+total_mortality %>%
+  rename(jurisdiction = `State/Federal`) %>%
+  filter(!(jurisdiction %in% c("Federal", "State"))) %>%
+  select(-"2001 caveat", -"")
+ 
+```
+
