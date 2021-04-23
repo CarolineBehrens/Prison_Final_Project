@@ -17,8 +17,8 @@ library(shinythemes)
 library(gt)
 
 library(readr)
-
 source("../make_plots.R")
+
 total_mortalitly <- msfp0116stt12 <- read_csv("raw_data/msfp0116stt12.csv")
 View(msfp0116stt12)
 crime_and_incarceration_by_state <- read_csv("raw_data/crime_and_incarceration_by_state.csv") 
@@ -36,8 +36,13 @@ ui <- navbarPage(
                              c(state_crime$name)
                          )),
                      mainPanel(plotOutput("state_crime"),
-                               plotOutput("vc_posterior"))) 
-             )),
+                               plotOutput("mortality_plot"))
+             ))),
+    tabPanel("Fit",
+             titlePanel("Discussion Title"),
+             p("Tour of the modeling choices you made and 
+              an explanation of why you made them"),
+             gt_output("fit_prisoner")),
     tabPanel("Discussion",
              titlePanel("Discussion Title"),
              p("Tour of the modeling choices you made and 
@@ -59,7 +64,7 @@ ui <- navbarPage(
              h3("About Me"),
              p("My name is Caroline Behrens and I study Economics. 
              You can reach me at Cbehrens@college.harvard.edu."),
-             p(tags$a(href ="https://github.com/CarolineBehrens/gov1005-milestone-3.git"))))
+             p(tags$a(href ="https://github.com/CarolineBehrens/practice_with_preceptor"))))
              
                          
 
@@ -73,6 +78,8 @@ server <- function(input, output){
    geom_point(size = 5)
   plot_1
 })
+ output$mortality_plot <- renderPlot(mortality_plot)
+ output$fit_prisoner <- render_gt(fit_prisoner)
 } 
 
   
