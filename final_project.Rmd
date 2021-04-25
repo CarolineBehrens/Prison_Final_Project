@@ -8,8 +8,8 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(rstanarm)
 library(ggthemes)
+library(rstanarm)
 library(ggdist)
 library(gt)
 library(janitor)
@@ -90,8 +90,8 @@ clean_crime <- crime_and_incarceration_by_state %>%
 ```
 
 ```{r}
-fit_1 <- stan_glm(prisoner_count_in_thousands ~ population_in_thousands + south + violent_crime_in_thousands + south*violent_crime_in_thousands,
-                  data = clean_crime, 
+fit_1 <- stan_glm(prisoner_count_in_thousands ~ population_bins + south + violent_crime_in_thousands + south*violent_crime_in_thousands,
+                  data = crime_w_bins, 
                   seed = 17,
                   refresh = 0)
 print(fit_1, digits = 4)
@@ -110,22 +110,37 @@ fit_prisoner <-tbl_regression(fit_1,
 
 fit_prisoner
 
-write_rds(fit_prisoner, "some-path/my_fit.rds")
 ```
 
 
 
 
 ```{r}
-population_in_thousands <- unique(clean_crime$population_in_thousands)
-south <- unique(clean_crime$south)
-violent_crime_in_thousands <- unique(clean_crime$violent_crime_in_thousands)
+population_bins <- unique(crime_w_bins$population_bins)
+south <- unique(crime_w_bins$south)
+violent_crime_in_thousands <- unique(crime_w_bins$violent_crime_in_thousands)
 
-newobs_1 <- expand_grid(population_in_thousands, south, violent_crime_in_thousands)
+newobs_1 <- expand_grid(population_bins, south, violent_crime_in_thousands)
 ```
 
+```{r, message=FALSE}
+real_p <-add_fitted_draws(newobs_1, fit_1) 
+
+real_p %>%
+  ggplot(aes(x = `.value`, y = population_bins, fill = south)) +
+  stat_slab(alpha = 0.5) + 
+  scale_x_continuous(labels = scales::number_format(accuracy = 1))
+
+```
+
+
 ```{r}
-real_p <-add_fitted_draws(newobs_1, fit_1)
+crime_w_bins <- clean_crime %>%
+  mutate(population_bins = case_when(population_in_thousands < 8000 ~ 1,
+                                     population_in_thousands >= 8000 & population_in_thousands <16000 ~ 2,
+                                     population_in_thousands >= 16000 & population_in_thousands <24000 ~ 3,
+                                     population_in_thousands >= 24000 & population_in_thousands < 32000 ~ 4,
+                                     population_in_thousands >= 32000 & population_in_thousands < 40000 ~ 5))
 ```
 
 
@@ -153,11 +168,22 @@ mortality_numbers <- total_mortality %>%
 
 
 mortality_plot <- ggplot(data = mortality_numbers, 
-       mapping = aes(x = Mortality_Number, 
-                     y = Year, 
+       mapping = aes(x = Year, 
+                     y = Mortality_Number, 
                      color = south)) +
-  geom_point(alpha = 0.5) 
+  geom_point(alpha = 0.5) + 
+  labs(title = "Mortality Numbers in Prisons",
+  subtitle = "Typically Higher Mortality in Southern State Prisons",
+  x = "Year", y = "Mortality Number")
   
 mortality_plot
+```
+
+```{r}
+crime_per_state <- crime_w_bins %>%
+  filter(jurisdiction == "Alabama") %>%
+ggplot(aes(y = robbery, x = year)) + 
+  geom_line()
+crime_per_state
 ```
 

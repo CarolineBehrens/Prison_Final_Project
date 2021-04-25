@@ -12,22 +12,19 @@ library(tidyverse)
 library(tidycensus)
 library(shinyWidgets)
 library(gtsummary)
-library(rstanarm)
 library(shinythemes)
 library(gt)
+library(bslib)
+library(broom.mixed)
 
 library(readr)
-source("../make_plots.R")
-
-total_mortalitly <- msfp0116stt12 <- read_csv("raw_data/msfp0116stt12.csv")
-View(msfp0116stt12)
-crime_and_incarceration_by_state <- read_csv("raw_data/crime_and_incarceration_by_state.csv") 
+source("make_plots.R")
 
 ui <- navbarPage(
     "Incarceration Numbers by State",
-    tabPanel("Model",
-             fluidPage(
-                 titlePanel("Model Title"),
+    tabPanel("Overview",
+             fluidPage(theme = shinytheme("slate"),
+                 titlePanel("Prisoner Trends Throughout States"),
                  sidebarLayout(
                      sidebarPanel(
                          selectInput(
@@ -38,11 +35,30 @@ ui <- navbarPage(
                      mainPanel(plotOutput("state_crime"),
                                plotOutput("mortality_plot"))
              ))),
-    tabPanel("Fit",
+    tabPanel("Model",
              titlePanel("Discussion Title"),
              p("Tour of the modeling choices you made and 
               an explanation of why you made them"),
              gt_output("fit_prisoner")),
+    tabPanel("Deeper Dive into Crime Type",
+             titlePanel("Discussion Title"), 
+             sidebarLayout(
+               sidebarPanel(
+                 selectInput(
+                   "state",
+                   "State",
+                   c(crime_w_bins$jurisdiction)
+                 ),
+                 selectInput(
+                   "crime",
+                   "Crime",
+                   c("Robbery","Vehicle Theft", "Murder Manslaughter",
+                     "Rape", "Aggrevated Assault","Burglary", "Larceny"
+                     ))
+                 ),
+               mainPanel(plotOutput("crime_per_state"))),
+             p("Tour of the modeling choices you made and 
+              an explanation of why you made them")),
     tabPanel("Discussion",
              titlePanel("Discussion Title"),
              p("Tour of the modeling choices you made and 
@@ -78,8 +94,52 @@ server <- function(input, output){
    geom_point(size = 5)
   plot_1
 })
+ 
+ 
  output$mortality_plot <- renderPlot(mortality_plot)
  output$fit_prisoner <- render_gt(fit_prisoner)
+ 
+ output$crime_per_state <- renderPlot({
+   case_when(
+     input$crime == "Robbery" ~ list(crime_w_bins %>%
+         filter(jurisdiction == input$state) %>%
+          ggplot(aes(y = robbery, x = year)) + 
+          geom_line()),
+     input$crime == "Vehicle Theft" ~ list(crime_w_bins %>%
+                                       filter(jurisdiction == input$state) %>%
+                                       ggplot(aes(y = vehicle_theft, x = year)) + 
+                                       geom_line()),
+     input$crime == "Murder Manslaughter" ~ list(crime_w_bins %>%
+                                       filter(jurisdiction == input$state) %>%
+                                       ggplot(aes(y = murder_manslaughter, x = year)) + 
+                                       geom_line()),
+     input$crime == "Rape" ~ list(crime_w_bins %>%
+                                       filter(jurisdiction == input$state) %>%
+                                       ggplot(aes(y = rape_legacy, x = year)) + 
+                                       geom_line()),
+     input$crime == "Aggrevated Assault" ~ list(crime_w_bins %>%
+                                       filter(jurisdiction == input$state) %>%
+                                       ggplot(aes(y = agg_assault, x = year)) + 
+                                       geom_line()),
+     input$crime == "Burglary" ~ list(crime_w_bins %>%
+                                       filter(jurisdiction == input$state) %>%
+                                       ggplot(aes(y = burglary, x = year)) + 
+                                       geom_line()),
+     input$crime == "Larceny" ~ list(crime_w_bins %>%
+                                       filter(jurisdiction == input$state) %>%
+                                       ggplot(aes(y = larceny, x = year)) + 
+                                       geom_line())
+  
+   )
+   
+   
+   
+   # crime_per_state <- crime_w_bins %>%
+   #   filter(jurisdiction == input$state) %>%
+   #   ggplot(aes(y = input$crime, x = year)) + 
+   #   geom_point()
+   # crime_per_state
+ })
 } 
 
   
