@@ -16,15 +16,21 @@ library(shinythemes)
 library(gt)
 library(bslib)
 library(broom.mixed)
+library(wesanderson)
+library(ggplot2)
+library(viridis)
+library(hrbrthemes)
+library(dplyr)
+library(forcats)
 
 library(readr)
 source("make_plots.R")
 
 ui <- navbarPage(
-    "Incarceration Numbers by State",
+    "Behind Bars",
     tabPanel("Overview",
-             fluidPage(theme = shinytheme("slate"),
-                 titlePanel("Prisoner Trends Throughout States"),
+             fluidPage(theme = shinytheme("sandstone"),
+                 titlePanel("Crime and Mortality Trends from 2001-2016"),
                  sidebarLayout(
                      sidebarPanel(
                          selectInput(
@@ -36,12 +42,26 @@ ui <- navbarPage(
                                plotOutput("mortality_plot"))
              ))),
     tabPanel("Model",
-             titlePanel("Discussion Title"),
-             p("Tour of the modeling choices you made and 
-              an explanation of why you made them"),
+             titlePanel("Model Discussion"),
+             h3("Preliminary Thoughts"),
+             p("From my initial data exploration" ),
+             
+             h3("Mathematical Model"),
+             #withMathJax(),
+             #helpText('$$ prisoner\_count\_in\_thousands_i = \beta_0 + 
+                     # \beta_1 population\_bins_i + \beta_2 south_i + 
+                     # \beta_3 violent\_crime\_in\_thousands_i + 
+                     # \beta_4 south*violent\_crime\_in\_thousands_i + 
+                    #  \epsilon_i$$'),
+             h3("Table"),
              gt_output("fit_prisoner")),
+    
+    h3("Analysis"),
+    p("As we can see from the table of this predictive model,"),
+    
+    
     tabPanel("Deeper Dive into Crime Type",
-             titlePanel("Discussion Title"), 
+             titlePanel("Crime Trends Per State"), 
              sidebarLayout(
                sidebarPanel(
                  selectInput(
@@ -59,28 +79,15 @@ ui <- navbarPage(
                mainPanel(plotOutput("crime_per_state"))),
              p("Tour of the modeling choices you made and 
               an explanation of why you made them")),
-    tabPanel("Discussion",
-             titlePanel("Discussion Title"),
-             p("Tour of the modeling choices you made and 
-              an explanation of why you made them")),
     tabPanel("About", 
              titlePanel("About"),
-             h3("I have always been interested in criminal justice, 
-                and this project allows me to explore data revolving 
-                the topic and explore the most common trends between 
-                states."),
-             p("So far I have loaded all of my data sets into this project. 
-               I have not gotten to process my data yet, but my plan is 
-               to filter out by jurisdiction, year, violent crime total 
-               and by each type of crime. I want to show the trends 
-               over the years and how crime trends have differed. I also want
-               to load the covid prison rates and examine the differences 
-               between every state. "),
+             h3("Project Background Motivations"),
+             p("So far"),
       
              h3("About Me"),
              p("My name is Caroline Behrens and I study Economics. 
              You can reach me at Cbehrens@college.harvard.edu."),
-             p(tags$a(href ="https://github.com/CarolineBehrens/practice_with_preceptor"))))
+             p(tags$a(href ="https://github.com/CarolineBehrens/practice_with_preceptor")))) 
              
                          
 
@@ -91,7 +98,7 @@ server <- function(input, output){
  plot_1 <- state_crime %>%
    filter(name == input$plot_type) %>%
     ggplot(aes(x = year, y = total/1000, color = type)) +
-   geom_point(size = 5)
+   geom_point(size = 3)
   plot_1
 })
  
@@ -104,31 +111,38 @@ server <- function(input, output){
      input$crime == "Robbery" ~ list(crime_w_bins %>%
          filter(jurisdiction == input$state) %>%
           ggplot(aes(y = robbery, x = year)) + 
-          geom_line()),
+          geom_point(color = 'purple') + 
+            geom_smooth()),
      input$crime == "Vehicle Theft" ~ list(crime_w_bins %>%
                                        filter(jurisdiction == input$state) %>%
                                        ggplot(aes(y = vehicle_theft, x = year)) + 
-                                       geom_line()),
+                                       geom_point(color = 'blue') + 
+                                          geom_smooth()),
      input$crime == "Murder Manslaughter" ~ list(crime_w_bins %>%
                                        filter(jurisdiction == input$state) %>%
                                        ggplot(aes(y = murder_manslaughter, x = year)) + 
-                                       geom_line()),
+                                       geom_point(color = 'red') +
+                                          geom_smooth()),
      input$crime == "Rape" ~ list(crime_w_bins %>%
                                        filter(jurisdiction == input$state) %>%
                                        ggplot(aes(y = rape_legacy, x = year)) + 
-                                       geom_line()),
+                                       geom_point(color = 'green') +
+                                     geom_smooth()),
      input$crime == "Aggrevated Assault" ~ list(crime_w_bins %>%
                                        filter(jurisdiction == input$state) %>%
                                        ggplot(aes(y = agg_assault, x = year)) + 
-                                       geom_line()),
+                                       geom_point(color = 'blue') +
+                                          geom_smooth()),
      input$crime == "Burglary" ~ list(crime_w_bins %>%
                                        filter(jurisdiction == input$state) %>%
                                        ggplot(aes(y = burglary, x = year)) + 
-                                       geom_line()),
+                                       geom_point(color = 'red') +
+                                         geom_smooth()),
      input$crime == "Larceny" ~ list(crime_w_bins %>%
                                        filter(jurisdiction == input$state) %>%
                                        ggplot(aes(y = larceny, x = year)) + 
-                                       geom_line())
+                                       geom_point(color = 'green') +
+                                        geom_smooth())
   
    )
    

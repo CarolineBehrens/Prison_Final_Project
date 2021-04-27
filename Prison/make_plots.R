@@ -7,6 +7,12 @@ library(gtsummary)
 library(shinythemes)
 library(gt)
 library(broom.mixed)
+library(ggplot2)
+library(viridis)
+library(hrbrthemes)
+library(dplyr)
+library(forcats)
+library(wesanderson)
 
 
 
@@ -111,16 +117,27 @@ mortality_numbers <- total_mortality %>%
 
 
 
-mortality_plot <- ggplot(data = mortality_numbers, 
-                         mapping = aes(x = Year, 
-                                       y = Mortality_Number, 
-                                       color = south)) +
-  geom_point(alpha = 0.5) + 
-  labs(Title = "Mortality Numbers in Prisons",
-       subtitle = "Typically Higher Mortality in Southern State Prisons",
-       x = "Year", y = "Mortality Number")
+# mortality_plot <- ggplot(data = mortality_numbers, 
+#                          mapping = aes(x = Year, 
+#                                        y = Mortality_Number, 
+#                                        color = south)) +
+#   geom_point(alpha = 0.5) + 
+#   labs(Title = "Mortality Numbers in Prisons",
+#        subtitle = "Typically Higher Mortality in Southern State Prisons",
+#        x = "Year", y = "Mortality Number")
 
 #mortality_plot
+
+
+ mortality_plot <- qplot(Year, Mortality_Number, data = mortality_numbers, 
+        geom= "violin", fill = south, outlier.color = "transparent") 
+
+
+
+
+
+
+
 
 fit_prisoner <-tbl_regression(fit_prisoner_data,
                               intercept = TRUE,
