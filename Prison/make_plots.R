@@ -1,18 +1,18 @@
-library(tidyverse)
-library(tidycensus)
-library(usethis)
 library(shiny)
-library(shinyWidgets)
+library(tidyverse)
+# library(tidycensus)
+# library(shinyWidgets)
 library(gtsummary)
 library(shinythemes)
 library(gt)
 library(broom.mixed)
-library(ggplot2)
+#library(wesanderson)
+# library(ggplot2)
 library(viridis)
-library(hrbrthemes)
-library(dplyr)
-library(forcats)
-library(wesanderson)
+#library(hrbrthemes)
+# library(dplyr)
+
+
 
 
 
@@ -94,14 +94,15 @@ state_crime <- crime_and_incarceration_by_state %>%
 
 
 
-# #fit_1 <- stan_glm(prisoner_count_in_thousands ~ population_in_thousands + south + violent_crime_in_thousands + south*violent_crime_in_thousands,
-#  #                 data = clean_crime, 
-#                   seed = 17,
-#                   refresh = 0)
-# print(fit_1, digits = 4)
 
-
-#saveRDS(fit_1, file = "prisoner_fit.RDS")
+# model_prisoner_count <-tbl_regression(fit_1,
+#                                       intercept = TRUE,
+#                                       estimate_fun = function(x) style_sigfig(x, digits = 3)) %>%
+#   as_gt() %>%
+#   tab_header(title = "Prisoner Count Varies Greatly by Population") %>%
+#   tab_source_note(md("Source: Data.world "))
+# 
+#  saveRDS(model_prisoner_count, file = "model_prisoner_count.RDS")
 
 
 mortality_numbers <- total_mortality %>%
@@ -117,16 +118,6 @@ mortality_numbers <- total_mortality %>%
 
 
 
-# mortality_plot <- ggplot(data = mortality_numbers, 
-#                          mapping = aes(x = Year, 
-#                                        y = Mortality_Number, 
-#                                        color = south)) +
-#   geom_point(alpha = 0.5) + 
-#   labs(Title = "Mortality Numbers in Prisons",
-#        subtitle = "Typically Higher Mortality in Southern State Prisons",
-#        x = "Year", y = "Mortality Number")
-
-#mortality_plot
 
 
  mortality_plot <- qplot(Year, Mortality_Number, data = mortality_numbers, 
@@ -134,26 +125,51 @@ mortality_numbers <- total_mortality %>%
 
 
 
+ # fit_1 <- stan_glm(prisoner_count_in_thousands ~ population_bins + south + violent_crime_bins + south*violent_crime_bins,
+ #                   data = crime_w_bins, 
+ #                   seed = 17,
+ #                   refresh = 0)
+ # print(fit_1, digits = 4)
+ # 
+ # 
+ #  saveRDS(fit_1, file = "prisoner_fit2.RDS")
+ 
 
 
 
 
+ model_prisoner_count <-tbl_regression(fit_1,
+                                       intercept = TRUE,
+                                       estimate_fun = function(x) style_sigfig(x, digits = 3)) %>%
+   as_gt() %>%
+   tab_header(title = "Prisoner Count Varies Greatly by Population") %>%
+   tab_source_note(md("Source: Data.world "))
 
-fit_prisoner <-tbl_regression(fit_prisoner_data,
-                              intercept = TRUE,
-                              estimate_fun = function(x) style_sigfig(x, digits = 3)) %>%
-  as_gt() %>%
-  tab_header(title = "Prisoner Count Varies Greatly by Population", 
-             subtitle = "Southern States Have More Crime  ") %>%
-  tab_source_note(md("Source: "))
+ 
+ population_bins <- unique(crime_w_bins$population_bins)
+ south <- unique(crime_w_bins$south)
+ violent_crime_bins <- unique(crime_w_bins$violent_crime_bins)
+ 
+ newobs_1 <- expand_grid(population_bins, south, violent_crime_bins)
+ 
+ real_p <-add_fitted_draws(newobs_1, fit_1) 
+   
+   model_plot <- real_p %>%
+   ggplot(aes(x = population_bins, y = .value, colour = violent_crime_bins)) +
+   geom_jitter(alpha = .5) +
+   geom_smooth(formula = y ~ x,
+               method = "lm") +
+   facet_wrap(~south) +
+   labs(title = "Prisoner Count", subtitle = "Geographical location has great effect",
+        x = "Population Bins", y = "Prisoner Count  (Thousands)")
 
-#fit_prisoner
+
 
 clean_crime <- crime_and_incarceration_by_state %>%
-  mutate(south = ifelse(jurisdiction %in% c("Alabama", "Florida", "Georgia", "Kentucky",
-                                            "Louisiana", "Maryland", "Mississippi",
-                                            "North Carolina", "Oklahoma", "South Carolina",
-                                            "Tennesse", "Texas", "Virginia", "West Virginia"),
+  mutate(south = ifelse(jurisdiction %in% c("ALABAMA", "FLORIDA", "GEORGIA", "KENTUCKY",
+                                            "LOUISIANA", "MARYLAND", "MISSISSIPPI",
+                                            "NORTH CAROLINA", "OKLAHOMA", "SOUTH CAROLINA",
+                                            "TENNESSEE", "TEXAS", "VIRGINIA", "WEST VIRGINIA"),
                         TRUE, FALSE)) %>%
   mutate(population_in_thousands = state_population/1000) %>%
   mutate(prisoner_count_in_thousands = prisoner_count/1000) %>%
@@ -162,13 +178,31 @@ clean_crime <- crime_and_incarceration_by_state %>%
   drop_na(prisoner_count_in_thousands) %>%
   drop_na(violent_crime_in_thousands)
 
-
 crime_w_bins <- clean_crime %>%
+  mutate(south = ifelse(jurisdiction %in% c("Alabama", "Florida", "Georgia", "Kentucky",
+                                            "Louisiana", "Maryland", "Mississippi",
+                                            "North Carolina", "Oklahoma", "South Carolina",
+                                            "Tennessee", "Texas", "Virginia", "West Virginia"),
+                        TRUE, FALSE)) %>%
+  mutate(population_in_thousands = state_population/1000) %>%
+  mutate(prisoner_count_in_thousands = prisoner_count/1000) %>%
+  mutate(violent_crime_in_thousands = violent_crime_total/1000) %>%
+  drop_na(population_in_thousands) %>%
+  drop_na(prisoner_count_in_thousands) %>%
+  drop_na(violent_crime_in_thousands) %>%
   mutate(population_bins = case_when(population_in_thousands < 8000 ~ 1,
                                      population_in_thousands >= 8000 & population_in_thousands <16000 ~ 2,
                                      population_in_thousands >= 16000 & population_in_thousands <24000 ~ 3,
                                      population_in_thousands >= 24000 & population_in_thousands < 32000 ~ 4,
-                                     population_in_thousands >= 32000 & population_in_thousands < 40000 ~ 5))
+                                     population_in_thousands >= 32000 & population_in_thousands < 40000 ~ 5)) %>%
+  mutate(violent_crime_bins = case_when(violent_crime_in_thousands < 43 ~ 1,
+                                        violent_crime_in_thousands  >= 43 & violent_crime_in_thousands < 86 ~2,
+                                        violent_crime_in_thousands >= 86 & violent_crime_in_thousands < 129 ~ 3,
+                                        violent_crime_in_thousands >= 129 & violent_crime_in_thousands < 172 ~ 4,
+                                        violent_crime_in_thousands >= 172 & violent_crime_in_thousands < 215 ~ 5))
+
+
+
 
 
 

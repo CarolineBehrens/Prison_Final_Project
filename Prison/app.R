@@ -9,19 +9,17 @@
 
 library(shiny)
 library(tidyverse)
-library(tidycensus)
-library(shinyWidgets)
+# library(tidycensus)
+# library(shinyWidgets)
 library(gtsummary)
 library(shinythemes)
 library(gt)
-library(bslib)
 library(broom.mixed)
-library(wesanderson)
-library(ggplot2)
+#library(wesanderson)
+# library(ggplot2)
 library(viridis)
-library(hrbrthemes)
-library(dplyr)
-library(forcats)
+#library(hrbrthemes)
+# library(dplyr)
 
 library(readr)
 source("make_plots.R")
@@ -29,7 +27,7 @@ source("make_plots.R")
 ui <- navbarPage(
     "Behind Bars",
     tabPanel("Overview",
-             fluidPage(theme = shinytheme("sandstone"),
+             fluidPage(theme = shinytheme("darkly"),
                  titlePanel("Crime and Mortality Trends from 2001-2016"),
                  sidebarLayout(
                      sidebarPanel(
@@ -44,20 +42,28 @@ ui <- navbarPage(
     tabPanel("Model",
              titlePanel("Model Discussion"),
              h3("Preliminary Thoughts"),
-             p("From my initial data exploration" ),
+             p("From my initial data exploration I was curoious about the 
+               relationship between northern and southern states and how 
+               the amount of prisoners each state has varies. I figured that 
+               a good indicator of this would be the population of the state in
+               general because more citizens creats more opportunity for crime.
+               I also know that the relationship between violent crime 
+               and prisoner count has to be linear because those who 
+               commit violent crimes will most likely be put in prison." ),
              
              h3("Mathematical Model"),
-             #withMathJax(),
-             #helpText('$$ prisoner\_count\_in\_thousands_i = \beta_0 + 
-                     # \beta_1 population\_bins_i + \beta_2 south_i + 
-                     # \beta_3 violent\_crime\_in\_thousands_i + 
-                     # \beta_4 south*violent\_crime\_in\_thousands_i + 
-                    #  \epsilon_i$$'),
+             withMathJax(
+             '$$ PrisonerCountInThousands_i = \\beta_0 + 
+                      \\beta_1 PopulationBins_i + \\beta_2 South_i + 
+                      \\beta_3 ViolentCrimeInThousands_i + 
+                      \\beta_4 South*ViolentCrimeInThousands_i + 
+                     \\epsilon_i $$'),
              h3("Table"),
-             gt_output("fit_prisoner")),
+             gt_output("model_prisoner_count"),
     
     h3("Analysis"),
-    p("As we can see from the table of this predictive model,"),
+    p(""),
+    plotOutput("model_plot")),
     
     
     tabPanel("Deeper Dive into Crime Type",
@@ -77,17 +83,21 @@ ui <- navbarPage(
                      ))
                  ),
                mainPanel(plotOutput("crime_per_state"))),
-             p("Tour of the modeling choices you made and 
-              an explanation of why you made them")),
+             p("")),
     tabPanel("About", 
              titlePanel("About"),
              h3("Project Background Motivations"),
-             p("So far"),
+             p("I have always been intrigued about the criminal justice 
+               system, but have never before gotten to look at statistics 
+               pertaining to crimes and prisoners across each state. I have 
+               done research before related to programs in place at prisons, 
+               but have never explored the types of people and crimes they are
+               convicted of."),
       
              h3("About Me"),
              p("My name is Caroline Behrens and I study Economics. 
              You can reach me at Cbehrens@college.harvard.edu."),
-             p(tags$a(href ="https://github.com/CarolineBehrens/practice_with_preceptor")))) 
+             p(tags$a(href ="https://github.com/CarolineBehrens/Prison_Final_Project")))) 
              
                          
 
@@ -95,17 +105,20 @@ ui <- navbarPage(
 
 server <- function(input, output){
  output$state_crime <- renderPlot({ 
- plot_1 <- state_crime %>%
+  state_crime %>%
    filter(name == input$plot_type) %>%
     ggplot(aes(x = year, y = total/1000, color = type)) +
    geom_point(size = 3)
-  plot_1
+ 
 })
  
  
  output$mortality_plot <- renderPlot(mortality_plot)
- output$fit_prisoner <- render_gt(fit_prisoner)
+ output$model_prisoner_count <- render_gt(model_prisoner_count)
+ output$model_plot <- renderPlot(model_plot)
  
+ #case when function is allowing for multiple dropdowns for 
+ #second interactive plot
  output$crime_per_state <- renderPlot({
    case_when(
      input$crime == "Robbery" ~ list(crime_w_bins %>%
@@ -148,11 +161,7 @@ server <- function(input, output){
    
    
    
-   # crime_per_state <- crime_w_bins %>%
-   #   filter(jurisdiction == input$state) %>%
-   #   ggplot(aes(y = input$crime, x = year)) + 
-   #   geom_point()
-   # crime_per_state
+ 
  })
 } 
 
