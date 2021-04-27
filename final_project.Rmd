@@ -96,6 +96,30 @@ clean_crime <- crime_and_incarceration_by_state %>%
 
 $$ prisoner\_count\_in\_thousands_i = \beta_0 + \beta_1 population\_bins_i + \beta_2 south_i + \beta_3 violent\_crime\_in\_thousands_i + \beta_4 south*violent\_crime\_in\_thousands_i + \epsilon_i$$ 
 
+```{r}
+crime_w_bins <- clean_crime %>%
+ mutate(south = ifelse(jurisdiction %in% c("Alabama", "Florida", "Georgia", "Kentucky",
+                                            "Louisiana", "Maryland", "Mississippi",
+                                            "North Carolina", "Oklahoma", "South Carolina",
+                                            "Tennessee", "Texas", "Virginia", "West Virginia"),
+                        TRUE, FALSE)) %>%
+  mutate(population_in_thousands = state_population/1000) %>%
+  mutate(prisoner_count_in_thousands = prisoner_count/1000) %>%
+  mutate(violent_crime_in_thousands = violent_crime_total/1000) %>%
+  drop_na(population_in_thousands) %>%
+  drop_na(prisoner_count_in_thousands) %>%
+  drop_na(violent_crime_in_thousands) %>%
+  mutate(population_bins = case_when(population_in_thousands < 8000 ~ 1,
+                                     population_in_thousands >= 8000 & population_in_thousands <16000 ~ 2,
+                                     population_in_thousands >= 16000 & population_in_thousands <24000 ~ 3,
+                                     population_in_thousands >= 24000 & population_in_thousands < 32000 ~ 4,
+                                     population_in_thousands >= 32000 & population_in_thousands < 40000 ~ 5)) %>%
+  mutate(violent_crime_bins = case_when(violent_crime_in_thousands < 43 ~ 1,
+                                        violent_crime_in_thousands  >= 43 & violent_crime_in_thousands < 86 ~2,
+                                        violent_crime_in_thousands >= 86 & violent_crime_in_thousands < 129 ~ 3,
+                                        violent_crime_in_thousands >= 129 & violent_crime_in_thousands < 172 ~ 4,
+                                        violent_crime_in_thousands >= 172 & violent_crime_in_thousands < 215 ~ 5))
+```
 
 
 
@@ -105,6 +129,9 @@ fit_1 <- stan_glm(prisoner_count_in_thousands ~ population_bins + south + violen
                   seed = 17,
                   refresh = 0)
 print(fit_1, digits = 4)
+
+
+  saveRDS(fit_1, file = "prisoner_fit2.RDS")
 ```
 *section 6.3*
 *chapter 9* 
@@ -152,7 +179,7 @@ real_p <-add_fitted_draws(newobs_1, fit_1)
 
 ```
 ```{r}
-real_p <-add_fitted_draws(newobs_1, fit_1) %>%
+real_p <-add_fitted_draws(newobs_1, fit_1) 
 
 real_p %>%
   ggplot(aes(x = population_bins, y = .value, colour = violent_crime_bins)) +
@@ -165,30 +192,7 @@ real_p %>%
 ```
 
 
-```{r}
-crime_w_bins <- clean_crime %>%
- mutate(south = ifelse(jurisdiction %in% c("ALABAMA", "FLORIDA", "GEORGIA", "KENTUCKY",
-                                            "LOUISIANA", "MARYLAND", "MISSISSIPPI",
-                                            "NORTH CAROLINA", "OKLAHOMA", "SOUTH CAROLINA",
-                                            "TENNESSEE", "TEXAS", "VIRGINIA", "WEST VIRGINIA"),
-                        TRUE, FALSE)) %>%
-  mutate(population_in_thousands = state_population/1000) %>%
-  mutate(prisoner_count_in_thousands = prisoner_count/1000) %>%
-  mutate(violent_crime_in_thousands = violent_crime_total/1000) %>%
-  drop_na(population_in_thousands) %>%
-  drop_na(prisoner_count_in_thousands) %>%
-  drop_na(violent_crime_in_thousands) %>%
-  mutate(population_bins = case_when(population_in_thousands < 8000 ~ 1,
-                                     population_in_thousands >= 8000 & population_in_thousands <16000 ~ 2,
-                                     population_in_thousands >= 16000 & population_in_thousands <24000 ~ 3,
-                                     population_in_thousands >= 24000 & population_in_thousands < 32000 ~ 4,
-                                     population_in_thousands >= 32000 & population_in_thousands < 40000 ~ 5)) %>%
-  mutate(violent_crime_bins = case_when(violent_crime_in_thousands < 43 ~ 1,
-                                        violent_crime_in_thousands  >= 43 & violent_crime_in_thousands < 86 ~2,
-                                        violent_crime_in_thousands >= 86 & violent_crime_in_thousands < 129 ~ 3,
-                                        violent_crime_in_thousands >= 129 & violent_crime_in_thousands < 172 ~ 4,
-                                        violent_crime_in_thousands >= 172 & violent_crime_in_thousands < 215 ~ 5))
-```
+
 
 
 
